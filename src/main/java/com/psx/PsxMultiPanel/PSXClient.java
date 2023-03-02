@@ -8,7 +8,7 @@ import static java.lang.Integer.parseInt;
 
 public class PSXClient {
 
-    public static final String HOST = "127.0.0.1";
+    public static final String HOST = "192.168.1.60";
     public static final int PORT = 10747;
 
     private static BufferedWriter os;
@@ -25,6 +25,7 @@ public class PSXClient {
         public static final String VERTICAL_SPEED_VALUE = "Qi34";
         public static final String IAS_VALUE = "Qi32";
         public static final String HDG_VALUE = "Qi33";
+        public static final String CRS_VALUE = "Qs448";
         public static final String CMD_L_BTN = "Qh73";
         public static final String CMD_C_BTN = "Qh74";
         public static final String CMD_R_BTN = "Qh75";
@@ -43,7 +44,6 @@ public class PSXClient {
         public static final String SPEED_LIGHT = "Qi64";
 
         public static final String FLAPS = "Qh389";
-
     }
 
     public static class PSXVariableEvent {
@@ -115,8 +115,6 @@ public class PSXClient {
             Thread.sleep(100);
         }
 
-        sendMessageToPsx("Qh389=1");
-
         try {
 
             // Read buffer provided by PsxMultiPanel to send to PSX
@@ -150,17 +148,6 @@ public class PSXClient {
                 String[] splited = responseLine.split("=");
                 if (splited.length > 1) {
                     getPSXDataAndSendToDisplay(splited[0], splited[1], psxMultiPanel);
-                    String[] excludeList = {"Qs121", "Qs64", "Qs91", "Qi212", "Qs125", "Qs124", "Qs356", "Qi210",
-                            "Qi219", "Qs376", "Qs390", "Qs356", "Qs123", "Qs450", "Qs438", "Qs450","Qi247", "Qi223",
-                            "Qs432", "Qs66", "Qs126", "Qs127", "Qs402", "Qs439", "Qi200", "Qi258", "Qi138", "Qi208",
-                            "Qs440", "Qs451", "Qs436", "Qi207", "Qi119", "Qs352", "Qs431", "Qi173", "metar", "Qs434",
-                            "Qs75", "Qs103", "Qi183", "Qs423", "Qs444"};
-                    if (!find(splited[0], excludeList)) {
-                       //System.out.println("ID:["+ splited[0] + "] = " + splited[1]);
-                    }
-                    if ("Qh389".equals(splited[0]) || "Qi86".equals(splited[0])) {
-                        System.out.println("ID:["+ splited[0] + "; value = " + splited[1]);
-                    }
                 }
             }
 
@@ -222,7 +209,12 @@ public class PSXClient {
             psxMultiPanel.setIasMcp(parseInt(value));
         } else if (PSXVariable.HDG_VALUE.equals(id)) {
             psxMultiPanel.setHdgMcp(parseInt(value));
-        } else if (PSXVariable.CMD_L_BTN.equals(id) || PSXVariable.CMD_C_BTN.equals(id) || PSXVariable.CMD_R_BTN.equals(id)) {
+        } else if (PSXVariable.CRS_VALUE.equals(id)) {
+            String qnh = getSocketValue(value, 3, ";");
+            psxMultiPanel.setCrsMcp(parseInt(qnh) / 100);
+        }
+
+        else if (PSXVariable.CMD_L_BTN.equals(id) || PSXVariable.CMD_C_BTN.equals(id) || PSXVariable.CMD_R_BTN.equals(id)) {
             setCmd(id, parseInt(value));
         }
 
@@ -245,5 +237,14 @@ public class PSXClient {
         else if (PSXVariable.FLAPS.equals(id)) {
             FLAPS = parseInt(value);
         }
+    }
+
+    private static String getSocketValue(String s, int index, String separateur) {
+        String result = "0";
+        String[] split = s.split(separateur);
+        if (index < split.length) {
+            result = split[index];
+        }
+        return result;
     }
 }

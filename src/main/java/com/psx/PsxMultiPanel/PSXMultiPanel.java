@@ -66,12 +66,6 @@ public class PSXMultiPanel implements HidServicesListener {
         public static int hdg = 200;
         public static int crs = 300;
     }
-
-    public static void main(String[] args) throws HidException, InterruptedException {
-        PSXMultiPanel psxMultiPanel = new PSXMultiPanel();
-        psxMultiPanel.execute();
-    }
-
     public void execute() throws HidException, InterruptedException {
         // Configure to use custom specification
         HidServicesSpecification hidServicesSpecification = new HidServicesSpecification();
@@ -91,26 +85,11 @@ public class PSXMultiPanel implements HidServicesListener {
         hidDevice = hidServices.getHidDevice(VENDOR_ID, PRODUCT_ID, SERIAL_NUMBER);
         if (hidDevice != null) {
             System.out.println("Device was found");
-            // Consider overriding dropReportIdZero on Windows
-            // if you see "The parameter is incorrect"
-            // HidApi.dropReportIdZero = true;
 
-            changeUpperValue(0, data, 5);
-            changeLowerValue(0, data, 4);
+            // changeUpperValue(0, data, 5);
+            // changeLowerValue(0, data, 4);
             updateDisplay();
-
-            new Thread(() -> {
-                try {
-                    readMessage(hidDevice);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }).start();
-
-            while (true)
-            {
-                Thread.sleep(5000);
-            }
+            readMessage(hidDevice);
         }
 
         // Shut down and rely on auto-shutdown hook to clear HidApi resources
@@ -120,7 +99,6 @@ public class PSXMultiPanel implements HidServicesListener {
 
     @Override
     public void hidDeviceAttached(HidServicesEvent event) {
-
 
     }
 
@@ -140,14 +118,14 @@ public class PSXMultiPanel implements HidServicesListener {
         }
 
         // Prepare to read a single data packet
-        int val;
-        while (true) {
+        int val = 0;
+        while (val != -1) {
             byte readData[] = new byte[PACKET_IN_LENGTH];
-            // This method will now block for 500ms or until data is read
+            // This method will be stuck for 500ms or until data is read
             val = hidDevice.read(readData, 500);
             switch (val) {
                 case -1:
-                    System.err.println(hidDevice.getLastErrorMessage());
+                    System.err.println("Error: can't read device");
                     break;
                 case 0:
                     break;
@@ -402,7 +380,6 @@ public class PSXMultiPanel implements HidServicesListener {
     }
 
     public void setCrsMcp(int number) {
-        System.out.println("MCP CRS UPDATE");
         MultiPanelValues.crs = number;
         updateDisplay(MultiPanelSwitch.CRS);
     }
